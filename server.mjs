@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 const 端口 = Number(process.env.PORT || 8790);
 const 静态目录 = resolve(import.meta.dirname, 'public');
 const 源码目录 = resolve(import.meta.dirname, 'public', 'sources');
+const 源码远程基础 = 'https://raw.githubusercontent.com/byJoey/cfnew/main';
 const 接口地址 = 'https://api.cloudflare.com/client/v4';
 const 兼容日期 = '2026-01-20';
 const 绑定名 = 'C';
@@ -74,7 +75,7 @@ async function 部署(数据) {
   const 模式 = 数据.sourceMode === 'plain' ? 'plain' : 'encoded';
   const 部署方式 = 数据.deployType === 'worker' ? 'worker' : 'pages';
   记录(`准备${操作模式 === 'update' ? '更新' : '部署'} ${部署方式 === 'pages' ? 'Pages' : 'Worker'}: ${项目名}`);
-  记录(`部署源: ${模式 === 'plain' ? '明文源吗' : '少年你相信光吗'}`);
+  记录(`部署源: ${模式 === 'plain' ? '明文源吗' : '少年你相信光吗'}，实时联网拉取`);
   if (操作模式 === 'update') {
     if (部署方式 === 'worker') {
       await 同步Worker代码(数据.credentials, {
@@ -555,7 +556,25 @@ async function 列出绑定域名(凭据, 选项, 记录) {
 
 async function 读取源代码(mode) {
   const 文件名 = mode === 'plain' ? '明文源吗' : '少年你相信光吗';
-  return readFile(join(源码目录, 文件名), 'utf8');
+  const 地址 = `${源码远程基础}/${encodeURIComponent(文件名)}?t=${Date.now()}`;
+  try {
+    const 响应 = await fetch(地址, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache'
+      }
+    });
+    if (!响应.ok) throw new Error(`${响应.status} ${响应.statusText}`);
+    const 内容 = await 响应.text();
+    if (!内容.trim()) throw new Error('远程源文件为空');
+    return 内容;
+  } catch (错误) {
+    try {
+      return await readFile(join(源码目录, 文件名), 'utf8');
+    } catch {
+      throw new Error(`实时拉取源文件失败: ${错误.message}`);
+    }
+  }
 }
 
 async function 运行Wrangler(args, 凭据, accountId, 工作目录 = process.cwd()) {

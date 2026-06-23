@@ -33,7 +33,7 @@ npm start
 - 更新部署只同步代码，不修改 UUID、KV、域名或项目配置
 - Worker 部署
 - Pages 部署
-- 明文源 `public/sources/明文源吗` 或混淆源 `public/sources/少年你相信光吗`
+- 部署时实时从 `byJoey/cfnew` 的 `main` 分支拉取明文源或混淆源
 - Worker 自定义域名或 Route 绑定
 - Pages 自定义域名绑定
 

@@ -1,6 +1,7 @@
 const 接口地址 = 'https://api.cloudflare.com/client/v4';
 const 兼容日期 = '2026-01-20';
 const 绑定名 = 'C';
+const 源码远程基础 = 'https://raw.githubusercontent.com/byJoey/cfnew/main';
 
 export async function onRequestPost(context) {
   try {
@@ -45,7 +46,7 @@ async function 部署(数据, context) {
   const 模式 = 数据.sourceMode === 'plain' ? 'plain' : 'encoded';
   const 部署方式 = 数据.deployType === 'worker' ? 'worker' : 'pages';
   记录(`准备${操作模式 === 'update' ? '更新' : '部署'} ${部署方式 === 'pages' ? 'Pages' : 'Worker'}: ${项目名}`);
-  记录(`部署源: ${模式 === 'plain' ? '明文源吗' : '少年你相信光吗'}`);
+  记录(`部署源: ${模式 === 'plain' ? '明文源吗' : '少年你相信光吗'}，实时联网拉取`);
   if (操作模式 === 'update') {
     if (部署方式 === 'worker') {
       await 同步Worker代码(数据.credentials, {
@@ -507,13 +508,17 @@ async function 列出绑定域名(凭据, 选项, 记录) {
 
 async function 读取源代码(mode, context) {
   const 文件名 = mode === 'plain' ? '明文源吗' : '少年你相信光吗';
-  const 地址 = new URL(context.request.url);
-  地址.pathname = `/sources/${encodeURIComponent(文件名)}`;
-  地址.search = '';
-  const 请求 = new Request(地址.toString(), { method: 'GET' });
-  const 响应 = context.env?.ASSETS?.fetch ? await context.env.ASSETS.fetch(请求) : await fetch(请求);
-  if (!响应.ok) throw new Error(`读取部署源失败: ${响应.status}`);
-  return await 响应.text();
+  const 远程地址 = `${源码远程基础}/${encodeURIComponent(文件名)}?t=${Date.now()}`;
+  const 响应 = await fetch(远程地址, {
+    headers: {
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache'
+    }
+  });
+  if (!响应.ok) throw new Error(`实时拉取源文件失败: ${响应.status} ${响应.statusText}`);
+  const 内容 = await 响应.text();
+  if (!内容.trim()) throw new Error('实时拉取源文件失败: 远程源文件为空');
+  return 内容;
 }
 
 async function 调用接口(凭据, 路径, 选项 = {}) {
