@@ -5,7 +5,7 @@
 2. **🚀 Cache API 强缓存集成**：内置了高性能缓存逻辑，能减少 95% 以上的 KV 额度消耗，并支持在普通 `*.workers.dev` 域名下的自动兼容与优雅降级。
 3. **📦 Terser 深度压缩混淆**：代码体积从 1.6MB 巨幅压缩至 328KB，极大提升了节点冷启动和编译分发的速度。
 
-为了方便您后续能够**只提供 API Token** 即可随时拉起新项目或更新现有项目，我为您在根目录编写了 [deploy-quick.mjs](file:///c:/Users/leina/Desktop/project/cfnew-deployer/deploy-quick.mjs) 自动化一键部署脚本。
+为了方便您后续能够**只提供 API Token** 即可随时拉起新项目或更新现有项目，我为您在根目录编写了 [deploy-quick.mjs](./deploy-quick.mjs) 自动化一键部署脚本。
 
 ---
 
