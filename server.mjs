@@ -567,6 +567,16 @@ async function 列出绑定域名(凭据, 选项, 记录) {
 async function 读取源代码(mode) {
   const 文件名 = mode === 'plain' ? '明文源吗' : '少年你相信光吗';
   const 地址 = `${源码远程基础}/${encodeURIComponent(文件名)}?t=${Date.now()}`;
+  
+  // 优先读取本地文件，方便进行开发调试和定制化部署
+  try {
+    if (existsSync(join(源码目录, 文件名))) {
+      return await readFile(join(源码目录, 文件名), 'utf8');
+    }
+  } catch (本地读取错误) {
+    // 忽略本地读取错误，继续尝试网络下载
+  }
+
   try {
     const 响应 = await fetch(地址, {
       headers: {

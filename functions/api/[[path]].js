@@ -535,6 +535,23 @@ async function 列出绑定域名(凭据, 选项, 记录) {
 
 async function 读取源代码(mode, context) {
   const 文件名 = mode === 'plain' ? '明文源吗' : '少年你相信光吗';
+
+  // 优先尝试从本域名的静态资源中拉取（本地打包好的代码），使得自托管部署更加稳定
+  if (context && context.request && context.request.url) {
+    try {
+      const 本地静态地址 = new URL(`/sources/${encodeURIComponent(文件名)}`, context.request.url).toString();
+      const 本地响应 = await fetch(本地静态地址);
+      if (本地响应.ok) {
+        const 本地内容 = await 本地响应.text();
+        if (本地内容 && 本地内容.trim()) {
+          return 本地内容;
+        }
+      }
+    } catch (本地拉取错误) {
+      // 忽略错误，回退到远程
+    }
+  }
+
   const 远程地址 = `${源码远程基础}/${encodeURIComponent(文件名)}?t=${Date.now()}`;
   const 响应 = await fetch(远程地址, {
     headers: {
