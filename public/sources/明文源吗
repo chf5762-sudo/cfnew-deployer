@@ -8,7 +8,7 @@ function 解码64(文本) {
   for (let 索引 = 0; 索引 < 二进制.length; 索引++) 字节[索引] = 二进制.charCodeAt(索引);
   return 基础64文本解码器.decode(字节);
 }
-let 认证令牌 = '351c9981-04b6-4103-aa4b-864aa9c91469';
+let 认证令牌 = '615b6557-e05b-4b83-9922-bf1ef35b4681';
 let 回退地址 = '';
 let 代理5配置 = '';
 let 自定义优选地址列表 = [];
@@ -429,10 +429,10 @@ async function 加载键值配置(本地值771 = false) {
 
   // 构建 Cache Request 键，用 v (UUID) 进行唯一化标识，确保多实例共存时互不干扰
   const 缓存请求 = new Request('http://cfnew.local/config/' + (v || 'default'));
-  const 缓存器 = caches.default;
+  const 缓存器 = typeof caches !== 'undefined' ? caches.default : undefined;
 
-  // 如果不是强刷，优先尝试从免费且不限次数的 Cache API 中匹配已有缓存
-  if (!本地值771) {
+  // 如果不是强刷，且 Cache API 在当前域名下可用，优先尝试匹配缓存
+  if (!本地值771 && 缓存器) {
     try {
       const 缓存响应 = await 缓存器.match(缓存请求);
       if (缓存响应) {
@@ -466,16 +466,18 @@ async function 加载键值配置(本地值771 = false) {
     键值配置版本 = 本地值770;
     键值配置上次加载 = Date.now();
 
-    // 成功从 KV 读取后，同步写入 Cache API，配置缓存有效期为 600 秒 (10分钟)
-    try {
-      const 响应内容 = new Response(JSON.stringify({ config: 键值配置, version: 键值配置版本 }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=600'
-        }
-      });
-      await 缓存器.put(缓存请求, 响应内容);
-    } catch (写入缓存错误) {}
+    // 成功从 KV 读取后，在 Cache API 可用时，同步写入 Cache API，配置缓存有效期为 600 秒 (10分钟)
+    if (缓存器) {
+      try {
+        const 响应内容 = new Response(JSON.stringify({ config: 键值配置, version: 键值配置版本 }), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=600'
+          }
+        });
+        await 缓存器.put(缓存请求, 响应内容);
+      } catch (写入缓存错误) {}
+    }
 
   } catch (错误768) {
     // 读取失败时保留现有缓存，避免临时故障导致配置丢失
@@ -496,11 +498,14 @@ async function 保存键值配置() {
       await 键值存储.put('c_ver', 新值);
     } catch (忽略值767) {}
 
-    // 立即删除 Cache API 中的缓存，确保节点后续能立刻读到最新配置
-    try {
-      const 缓存请求 = new Request('http://cfnew.local/config/' + (v || 'default'));
-      await caches.default.delete(缓存请求);
-    } catch (删除缓存错误) {}
+    // 立即删除 Cache API 中的缓存（如果可用），确保节点后续能立刻读到最新配置
+    const 缓存器 = typeof caches !== 'undefined' ? caches.default : undefined;
+    if (缓存器) {
+      try {
+        const 缓存请求 = new Request('http://cfnew.local/config/' + (v || 'default'));
+        await 缓存器.delete(缓存请求);
+      } catch (删除缓存错误) {}
+    }
 
     键值配置上次加载 = Date.now();
   } catch (错误766) {
